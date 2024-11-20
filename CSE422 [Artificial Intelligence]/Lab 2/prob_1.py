@@ -1,99 +1,90 @@
-# import random
+import random
 
-# # Fitness function to calculate penalties
-# def fitness_function(schedule, N, T):
-#     penalty_overlap = 0
-#     penalty_consistency = 0
+def creating_random_population(ovulation_count, given_chro):  # initial population for chromosomes
+    return [''.join(random.choice('01') for l in range(given_chro)) for m in range(ovulation_count)]
+
+
+def making_parents(random_gene):  # population parents
+    return random.sample(random_gene, 2)
+
+
+def fitness_func(new_chro, N, T):
+    penalty_overlap = 0
+    penalty_consistency = 0
+
+    for j in range(T):  # penalty overlap
+        courses = sum(int(new_chro[j * N + i]) for i in range(N))
+       
+        if courses > 1:
+            penalty_overlap += courses - 1
+
+    for k in range(N):  # penalty for consistency
+        time_of_mutation = sum(int(new_chro[i * N + k]) for i in range(T))
+        penalty_consistency += abs(time_of_mutation - 1)
+
+    return -(penalty_overlap + penalty_consistency)
+
+
+def crossover(par_one, par_two):  # crossover 2 position
+    mutd_one = random.randint(1, len(par_one) - 2)
+    mutd_two = random.randint(mutd_one + 1, len(par_one) - 1)
+    offsp_one = par_one[:mutd_one] + par_two[mutd_one:mutd_two] + par_one[mutd_two:]
+    offsp_two = par_two[:mutd_one] + par_one[mutd_one:mutd_two] + par_two[mutd_two:]
+    return offsp_one, offsp_two
+
+
+def mutate(new_chro, val_of_mutation=0.01):  # Mutation
+    chr_list = list(new_chro)
+    for i in range(len(chr_list)):
+        if random.random() < val_of_mutation:
+            chr_list[i] = '1' if chr_list[i] == '0' else '0'
+    return ''.join(chr_list)
+
+
+def GA(N, T, size_p=10, gen_high=1000, val_of_mutation=0.01, main_chro=None):  # Genetic Algorithm
+    given_chro = N * T
+    random_gene = creating_random_population(size_p, given_chro)
+
+    for x in range(gen_high):
+        storing_population = []
+
+        for c in range(size_p // 2):
+
+            par_one, par_two = making_parents(random_gene)
+            offsp_one, offsp_two = crossover(par_one, par_two)
+            offsp_one = mutate(offsp_one, val_of_mutation)
+            offsp_two = mutate(offsp_two, val_of_mutation)
+           
+            storing_population.extend([offsp_one, offsp_two])
+
+        random_gene = sorted(storing_population, key=lambda x: fitness_func(x, N, T), reverse=True)[:size_p]
+
+        if main_chro and main_chro in random_gene:
+
+            return main_chro, fitness_func(main_chro, N, T)
+
+    res = max(random_gene, key=lambda x: fitness_func(x, N, T))
+    return res, fitness_func(res, N, T)
+
+def main():
+    random.seed(42)
+
+    N, T = map(int, input("Enter number of courses and time slots: ").split())
+    courses = [input("Enter course code: ") for _ in range(N)]
     
-#     # Calculate overlap penalty
-#     for t in range(T):
-#         timeslot = schedule[t * N:(t + 1) * N]
-#         penalty_overlap += max(0, sum(timeslot) - 1)  # If more than 1 course in a slot
-    
-#     # Calculate consistency penalty
-#     for course in range(N):
-#         course_count = sum(schedule[course + t * N] for t in range(T))
-#         penalty_consistency += abs(course_count - 1)  # If not scheduled exactly once
-    
-#     return -(penalty_overlap + penalty_consistency)
 
-# # Generate random chromosome (binary string)
-# def generate_chromosome(N, T):
-#     chromosome = [0] * (N * T)
-#     for course in range(N):
-#         timeslot = random.randint(0, T - 1)
-#         chromosome[timeslot * N + course] = 1
-#     return chromosome
 
-# # Perform single-point crossover
-# def crossover(parent1, parent2):
-#     point = random.randint(1, len(parent1) - 1)
-#     child1 = parent1[:point] + parent2[point:]
-#     child2 = parent2[:point] + parent1[point:]
-#     return child1, child2
+    print(f"Number of courses: {N} Time slots: {T} Courses: {courses}")
 
-# # Mutation function to introduce random changes
-# def mutate(chromosome, mutation_rate):
-#     for i in range(len(chromosome)):
-#         if random.random() < mutation_rate:
-#             chromosome[i] = 1 - chromosome[i]  # Flip bit
-#     return chromosome
+    main_chro = "110110010"  # Goal Chromosome
+    res, fitness = GA(N, T, main_chro=main_chro)
 
-# # Generate initial population
-# def initialize_population(pop_size, N, T):
-#     return [generate_chromosome(N, T) for _ in range(pop_size)]
 
-# # Main Genetic Algorithm
-# def genetic_algorithm(N, T, max_generations, pop_size, mutation_rate):
-#     population = initialize_population(pop_size, N, T)
-#     best_schedule = None
-#     best_fitness = float('-inf')
-    
-#     for generation in range(max_generations):
-#         population_fitness = [(chromosome, fitness_function(chromosome, N, T)) for chromosome in population]
-#         population_fitness.sort(key=lambda x: x[1], reverse=True)
-        
-#         # Update best solution
-#         if population_fitness[0][1] > best_fitness:
-#             best_schedule = population_fitness[0][0]
-#             best_fitness = population_fitness[0][1]
-        
-#         # Selection of parents
-#         selected = population_fitness[:pop_size // 2]
-#         next_generation = []
-        
-#         # Crossover
-#         for i in range(0, len(selected), 2):
-#             if i + 1 < len(selected):
-#                 child1, child2 = crossover(selected[i][0], selected[i + 1][0])
-#                 next_generation.extend([child1, child2])
-        
-#         # Mutation
-#         next_generation = [mutate(chromosome, mutation_rate) for chromosome in next_generation]
-        
-#         # Fill the rest of the population
-#         while len(next_generation) < pop_size:
-#             next_generation.append(generate_chromosome(N, T))
-        
-#         population = next_generation
-    
-#     return best_schedule, best_fitness
+    print("Best Chromosome:", res)
+    print("Fitness Value:", fitness)
 
-# # Input and Execution
-# N, T = map(int, input("Enter number of courses and timeslots: ").split())
-# courses = [input("Enter course code: ") for _ in range(N)]
-
-# if T < N:
-#     print("Error: Number of timeslots must be greater than or equal to the number of courses.")
-# else:
-#     max_generations = 100
-#     pop_size = 50
-#     mutation_rate = 0.1
-    
-#     best_schedule, best_fitness = genetic_algorithm(N, T, max_generations, pop_size, mutation_rate)
-    
-#     print("Best Schedule (Binary String):", ''.join(map(str, best_schedule)))
-#     print("Fitness Value:", best_fitness)
+if __name__ == "__main__":
+    main()
 
 
 
