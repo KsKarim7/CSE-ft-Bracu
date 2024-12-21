@@ -121,7 +121,7 @@ def selection(generated_population):
 def singlepoint_crossover(selected_parents):
     crossover = []
     split_point = random.randint(1, len(selected_parents[0]) - 1)
-    # print(split_point)
+
 
     child1 = selected_parents[0][:split_point] + selected_parents[1][split_point:]
     child2 = selected_parents[1][:split_point] + selected_parents[0][split_point:]
@@ -135,11 +135,8 @@ def mutation(crossed_overs):
     for i in range(len(crossed_overs)):
         child = crossed_overs[i]
         flip_index = random.randint(0, len(crossed_overs[0]) - 1)
-        # print(flip_index, 'fl')
-        # print(child)
-        # print(child[flip_index])
+
         bitFlip = '1' if child[flip_index] == "0" else '0'
-        # print(bitFlip)
 
         mutated = child[:flip_index] + bitFlip + child[flip_index + 1:]   
         crossed_overs[i] = mutated
@@ -198,7 +195,6 @@ def genetic_algo(population_size, iterations):
 
 run_algo = genetic_algo(10, 1000)
 
-print('TASK 1 OUTPUT')
 print(run_algo[0])
 print(run_algo[1])
 
